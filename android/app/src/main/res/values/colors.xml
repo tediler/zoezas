@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zoezas_background">#F9EAF1</color>
+    <color name="zoezas_card">#FFFFFF</color>
+    <color name="zoezas_text">#29242A</color>
+    <color name="zoezas_text_secondary">#8E858B</color>
+    <color name="zoezas_accent">#D989BE</color>
+    <color name="zoezas_accent_deep">#C46FAA</color>
+    <color name="zoezas_accent_soft">#FBEFF6</color>
+    <color name="ic_launcher_background">#F9EAF1</color>
+</resources>

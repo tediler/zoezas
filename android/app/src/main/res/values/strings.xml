@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zoëzas</string>
+    <string name="widget_description">Verfügbares Guthaben und schnell eine Ausgabe eintragen</string>
+    <string name="widget_available">VERFÜGBAR</string>
+    <string name="widget_add_expense">+ Ausgabe</string>
+    <string name="widget_add_income">+ Einnahme</string>
+    <string name="widget_empty">Öffne Zoëzas, um loszulegen</string>
+</resources>

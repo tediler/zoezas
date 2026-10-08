@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Datumswerte als lokale ISO-Zeichenkette speichern: ein Datum bleibt
+          # dasselbe Kalenderdatum, auch wenn sich die Zeitzone des Geräts ändert.
+          store_date_time_values_as_text: true

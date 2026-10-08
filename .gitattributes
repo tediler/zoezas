@@ -1,0 +1,8 @@
+# Einheitlich LF (auch unter Windows), Binärdateien automatisch erkennen.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ttf binary
+*.jar binary
+*.sqlite binary
+gradlew.bat text eol=crlf
