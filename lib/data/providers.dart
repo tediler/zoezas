@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/db/database.dart';
@@ -87,6 +88,7 @@ abstract final class SettingKeys {
   static const focus = 'profile.focus';
   static const onboarded = 'onboarding.done';
   static const homeSort = 'pref.homeSort';
+  static const lastBackup = 'backup.last';
 }
 
 class Profile {
@@ -207,6 +209,12 @@ final finaContextProvider = Provider<FinaContext?>((ref) {
     goals: ref.watch(goalProgressProvider),
     frequentSmallExpense: ref.watch(frequentSmallExpenseProvider),
     categoryNames: {for (final c in ref.watch(categoriesByIdProvider).values) c.id: c.name},
+    bookingCount: ledger.bookings.where((b) => b.status == BookingStatus.booked).length,
+    daysSinceBackup: switch (DateTime.tryParse(ref.watch(settingsProvider).value?[SettingKeys.lastBackup] ?? '')) {
+      final last? => Dates.daysBetween(last, now),
+      null => null,
+    },
+    inBrowser: kIsWeb,
   );
 });
 

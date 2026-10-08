@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
@@ -10,6 +8,7 @@ import '../core/format/money.dart';
 import '../domain/enums.dart';
 import '../domain/ledger.dart';
 import '../features/bookings/quick_add.dart';
+import 'web_support.dart';
 
 final platformIntegrationProvider = Provider<PlatformIntegration>((ref) => PlatformIntegration(ref));
 
@@ -21,6 +20,9 @@ final platformIntegrationProvider = Provider<PlatformIntegration>((ref) => Platf
 ///   die Schnelleingabe.
 /// * **App-Shortcuts** (langes Drücken auf das App-Icon) für „Ausgabe“ und
 ///   „Einnahme“ – auf Android und iOS ohne weiteren nativen Code.
+/// * **Browser (PWA):** Shortcuts aus `web/manifest.json` öffnen die App mit
+///   `?add=expense`; außerdem bittet die App um dauerhaften Speicher, damit der
+///   Browser die Daten nicht von sich aus löscht.
 class PlatformIntegration {
   PlatformIntegration(this.ref);
 
@@ -33,11 +35,14 @@ class PlatformIntegration {
   bool _initialized = false;
   String? _lastWidgetState;
 
-  bool get _supported => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  bool get _supported =>
+      !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
   Future<void> init() async {
-    if (_initialized || !_supported) return;
+    if (_initialized) return;
     _initialized = true;
+    if (kIsWeb) return _initWeb();
+    if (!_supported) return;
     try {
       await HomeWidget.setAppGroupId(appGroup);
       _handleUri(await HomeWidget.initiallyLaunchedFromHomeWidget());
@@ -55,6 +60,17 @@ class PlatformIntegration {
     } catch (e) {
       debugPrint('Quick Actions nicht verfügbar: $e');
     }
+  }
+
+  Future<void> _initWeb() async {
+    final base = Uri.base;
+    final add = base.queryParameters['add'] ?? Uri.tryParse(base.fragment)?.queryParameters['add'];
+    if (add != null) {
+      final t = add == 'income' ? BookingType.income : BookingType.expense;
+      ref.read(quickAddRequestProvider.notifier).request(QuickAddRequest(type: t));
+      WebSupport.removeQuery();
+    }
+    await WebSupport.requestPersistentStorage();
   }
 
   void _handleShortcut(String type) {
@@ -101,7 +117,7 @@ class PlatformIntegration {
 
   /// Android: Widget direkt aus der App auf den Homescreen legen.
   Future<bool> requestPinWidget() async {
-    if (!_supported || !Platform.isAndroid) return false;
+    if (!_supported || defaultTargetPlatform != TargetPlatform.android) return false;
     try {
       if (await HomeWidget.isRequestPinWidgetSupported() == true) {
         await HomeWidget.requestPinWidget(androidName: androidWidget);

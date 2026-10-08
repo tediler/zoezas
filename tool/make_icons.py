@@ -137,6 +137,21 @@ def main():
         w, _ = Image.open(png).size
         big.resize((w, w), Image.LANCZOS).save(png)
 
+    # Web/PWA: normale Icons (abgerundet), maskable (vollflächig, Figur in der
+    # Sicherheitszone), Apple-Touch-Icon (deckend, iOS rundet selbst), Favicon.
+    web = ROOT / "web"
+    if web.exists():
+        icons = web / "icons"
+        icons.mkdir(exist_ok=True)
+        for px in (192, 512):
+            rounded(render(px)).save(icons / f"Icon-{px}.png")
+            figure = render(int(px * 0.8), adaptive=True)
+            bg = gradient((px // 4, px // 4), BG_TOP, BG_BOTTOM).resize((px, px))
+            bg.alpha_composite(figure, ((px - figure.size[0]) // 2, (px - figure.size[1]) // 2))
+            bg.convert("RGB").save(icons / f"Icon-maskable-{px}.png")
+        render(180, opaque=True).save(icons / "apple-touch-icon.png")
+        rounded(render(48)).save(web / "favicon.png")
+
     preview = ROOT / "build/icon_preview.png"
     preview.parent.mkdir(exist_ok=True)
     rounded(render(512)).save(preview)

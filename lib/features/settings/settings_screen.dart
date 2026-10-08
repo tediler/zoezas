@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +13,7 @@ import '../../data/providers.dart';
 import '../../domain/enums.dart';
 import '../../domain/recurrence.dart';
 import '../../platform/platform_integration.dart';
+import '../../platform/web_support.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -135,25 +135,28 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 26),
                 const _GroupTitle('Homescreen'),
-                ZCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Column(
-                    children: [
-                      _Row(
-                        emoji: '🧩',
-                        title: 'Widget hinzufügen',
-                        subtitle: 'Verfügbares Guthaben + „Ausgabe“ direkt auf dem Homescreen',
-                        onTap: () => _addWidget(context, ref),
-                      ),
-                      const _Row(
-                        emoji: '⚡',
-                        title: 'Schnellaktionen',
-                        subtitle: 'App-Icon gedrückt halten → „Ausgabe hinzufügen“',
-                        last: true,
-                      ),
-                    ],
+                if (kIsWeb)
+                  const _WebAppCard()
+                else
+                  ZCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Column(
+                      children: [
+                        _Row(
+                          emoji: '🧩',
+                          title: 'Widget hinzufügen',
+                          subtitle: 'Verfügbares Guthaben + „Ausgabe“ direkt auf dem Homescreen',
+                          onTap: () => _addWidget(context, ref),
+                        ),
+                        const _Row(
+                          emoji: '⚡',
+                          title: 'Schnellaktionen',
+                          subtitle: 'App-Icon gedrückt halten → „Ausgabe hinzufügen“',
+                          last: true,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 26),
                 const _GroupTitle('Deine Daten'),
                 ZCard(
@@ -196,7 +199,7 @@ class SettingsScreen extends ConsumerWidget {
         onPrimary: () => Navigator.pop(ctx),
         children: [
           Text(
-            Platform.isIOS
+            defaultTargetPlatform == TargetPlatform.iOS
                 ? '1. Auf dem Homescreen lange auf eine freie Stelle drücken.\n'
                       '2. Oben links auf „+“ tippen.\n'
                       '3. „Zoëzas“ suchen und das Widget hinzufügen.'
@@ -207,6 +210,79 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text('Ein Tipp auf „+ Ausgabe“ öffnet direkt die Schnelleingabe.', style: ZText.secondary),
+        ],
+      ),
+    );
+  }
+}
+
+/// Im Browser: statt Widget und Shortcuts die Installation als App und der
+/// Zustand des Speichers.
+class _WebAppCard extends StatelessWidget {
+  const _WebAppCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final installed = WebSupport.isStandalone;
+    return ZCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Column(
+        children: [
+          _Row(
+            emoji: '📲',
+            title: installed ? 'Als App installiert' : 'Als App installieren',
+            subtitle: installed
+                ? 'Zoëzas startet vom Home-Bildschirm wie eine App ✓'
+                : 'Zoëzas auf den Home-Bildschirm legen – dann fühlt es sich wie eine App an',
+            onTap: installed ? null : () => _showInstallHelp(context),
+          ),
+          FutureBuilder<bool>(
+            future: WebSupport.isStoragePersisted(),
+            builder: (context, snap) {
+              final persisted = snap.data ?? false;
+              return _Row(
+                emoji: persisted ? '🛡️' : '💾',
+                title: persisted ? 'Speicher ist dauerhaft' : 'Speicher im Browser',
+                subtitle: persisted
+                    ? 'Der Browser löscht deine Daten nicht von sich aus. Sicherungen schaden trotzdem nie.'
+                    : 'Deine Daten liegen nur in diesem Browser. Sichere sie ab und zu unter „Deine Daten“.',
+                onTap: () => context.push('/data'),
+                last: true,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInstallHelp(BuildContext context) {
+    final apple = WebSupport.isAppleMobile;
+    showZSheet(
+      context,
+      builder: (ctx) => SheetScaffold(
+        title: 'Als App installieren',
+        primaryLabel: 'Alles klar',
+        onPrimary: () => Navigator.pop(ctx),
+        children: [
+          Text(
+            apple
+                ? '1. Diese Seite in Safari öffnen.\n'
+                      '2. Unten auf das Teilen-Symbol tippen (Quadrat mit Pfeil).\n'
+                      '3. „Zum Home-Bildschirm“ wählen und „Hinzufügen“.'
+                : '1. Diese Seite in Chrome öffnen.\n'
+                      '2. Oben rechts das Menü ⋮ öffnen.\n'
+                      '3. „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ wählen.',
+            style: ZText.body.copyWith(height: 1.7),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            apple
+                ? 'Wichtig: Die App vom Home-Bildschirm hat ihren eigenen Speicher. Löschst du das Symbol, sind auch '
+                      'die Daten darin weg – sichere vorher unter „Deine Daten“.'
+                : 'Danach startet Zoëzas ohne Adressleiste, und langes Drücken aufs Symbol bietet „Ausgabe hinzufügen“.',
+            style: ZText.secondary,
+          ),
         ],
       ),
     );

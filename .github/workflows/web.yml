@@ -1,0 +1,62 @@
+# Baut die Web-App (PWA) bei jedem Push auf main und veröffentlicht sie
+# kostenlos auf GitHub Pages: https://<name>.github.io/<repository>/
+#
+# Einmalig im Repository: Settings → Pages → Source: „GitHub Actions“.
+# Anleitung: docs/WEB.md
+
+name: Web-App veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.2
+          channel: stable
+          cache: true
+
+      - name: Pakete
+        run: flutter pub get
+
+      - name: Tests
+        run: flutter test
+
+      - name: Pfad bestimmen
+        id: base
+        run: |
+          repo="${{ github.event.repository.name }}"
+          if [[ "$repo" == *.github.io ]]; then echo "href=/" >> "$GITHUB_OUTPUT"; else echo "href=/$repo/" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Web-App bauen
+        run: flutter build web --release --no-web-resources-cdn --base-href "${{ steps.base.outputs.href }}"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

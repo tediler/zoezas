@@ -25,11 +25,14 @@ lib/
   features/                 Oberfläche je Bereich
     home/ bookings/ months/ stats/ savings/ settings/ onboarding/
   platform/
-    platform_integration.dart  Homescreen-Widget, App-Shortcuts, Deep Links
+    platform_integration.dart  Homescreen-Widget, App-Shortcuts, Deep Links, Web-Start
+    web_support*.dart          Browser-Hilfen (bedingter Import)
 android/app/src/main/       ZoezasWidgetProvider.kt, res/layout/zoezas_widget.xml, …
-ios/ZoezasWidget/           WidgetKit-Erweiterung (Swift), Einrichtung: docs/IOS_WIDGET.md
+ios/ZoezasWidget/           WidgetKit-Erweiterung (Swift) – zurückgestellt, iPhone nutzt die PWA
+web/                        index.html, manifest.json, Icons, sqlite3.wasm, drift_worker.js
+.github/workflows/web.yml   baut und veröffentlicht die PWA auf GitHub Pages
 test/                       domain/ (reine Logik), data/ (gegen SQLite im Speicher)
-tool/                       emulator.sh, make_icons.py
+tool/                       emulator.sh, make_icons.py, build_web.sh, web/drift_worker.dart
 ```
 
 **Datenfluss:** drift liefert jede Tabelle als Stream → `StreamProvider` →
@@ -106,6 +109,23 @@ Monatsanfang, Tempo, Monatsende, Wochenende, Standard) und dann die
 stabil gewählt (Seed = Datum), damit der Text nicht bei jedem Neuaufbau springt.
 Keine externe KI, keine Netzwerkzugriffe.
 
+## Web-App (PWA)
+
+Dieselbe Codebasis läuft im Browser ([WEB.md](WEB.md)). Unterschiede:
+
+- `AppDatabase._openConnection` gibt drift `DriftWebOptions` mit: SQLite als
+  WebAssembly (`web/sqlite3.wasm`) in einem Web Worker (`web/drift_worker.js`),
+  Speicher in IndexedDB/OPFS. Alles andere – Tabellen, Repositories, `Ledger` –
+  ist identisch.
+- `lib/platform/web_support.dart` exportiert per bedingtem Import entweder den
+  Stub (Android/iOS) oder `web_support_web.dart` (Installationsstatus, iPhone
+  erkennen, dauerhaften Speicher anfordern).
+- `PlatformIntegration.init` behandelt im Browser `?add=expense|income` aus den
+  Manifest-Shortcuts und fordert dauerhaften Speicher an; Widget und Quick
+  Actions sind dort aus.
+- `web/index.html` und `web/manifest.json` tragen Farben, Icons, iOS-Angaben und
+  einen Ladebildschirm.
+
 ## Homescreen-Widget
 
 - **Android:** `ZoezasWidgetProvider` (Kotlin, `RemoteViews`) liest die von
@@ -123,3 +143,4 @@ Keine externe KI, keine Netzwerkzugriffe.
   Haushaltsbuch (einige zehntausend Buchungen) ist das unkritisch; bei Bedarf
   lassen sich Monatswerte später per SQL aggregieren.
 - Nur Euro, nur Deutsch, nur helles Design.
+- Im Browser lädt Flutter Emoji-Schriften von `fonts.gstatic.com` nach (siehe WEB.md).

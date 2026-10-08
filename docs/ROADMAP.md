@@ -1,5 +1,19 @@
 # Roadmap
 
+## 08.10.2026 – Web-App (PWA) für das iPhone
+
+- Dieselbe App läuft im Browser und lässt sich auf dem iPhone über Safari zum
+  Home-Bildschirm hinzufügen ([WEB.md](WEB.md), D-015 bis D-018).
+- Lokal im Browser geprüft (Handygröße): Onboarding, Startbildschirm,
+  Schnelleingabe, Speichern und Neuladen (Daten bleiben), Einstellungen,
+  Datenbildschirm, Betrieb unter einem Unterpfad wie bei GitHub Pages.
+- Android-App unverändert geprüft (Daten von gestern weiter da).
+- Neu für beide: Sicherungs-Erinnerung durch Fina, Datum der letzten Sicherung.
+- 40 Tests.
+- **Nicht geprüft:** echtes iPhone (Safari, Home-Bildschirm, Speicher,
+  Teilen-Menü), echtes Hosting – beides braucht dich.
+- **Offen:** Emoji-Schrift mitliefern statt von Google nachladen.
+
 ## Stand 07.10.2026 – Version 0.1.0
 
 Auf dem Emulator `Medium_Phone_API_35_3` durchgespielt:
@@ -30,7 +44,7 @@ Import einer Sicherung über den Dateiauswahldialog, sehr große Datenmengen.
 
 ## Als Nächstes (Vorschläge)
 
-1. **iOS einrichten** nach [IOS_WIDGET.md](IOS_WIDGET.md), sobald ein Mac verfügbar ist.
+1. **Web-App hosten** nach [WEB.md](WEB.md) und auf dem iPhone installieren.
 2. **Eine Woche echt benutzen** und Finas Texte sowie die Prognose an der
    eigenen Realität prüfen.
 3. **Erinnerungen** (lokale Benachrichtigungen): fällige Zahlungen, Budget fast

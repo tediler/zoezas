@@ -1,5 +1,9 @@
 # iOS: Homescreen-Widget und App-Shortcuts einrichten
 
+> **Zurückgestellt (08.10.2026):** Auf dem iPhone wird Zoëzas als Web-App
+> genutzt ([WEB.md](WEB.md), D-015). Diese Anleitung gilt nur, falls später
+> doch eine native iOS-App gebaut wird.
+
 Die Flutter-App läuft auf iOS ohne weitere Schritte. Für das **Homescreen-Widget**
 braucht es einmalig Xcode auf einem Mac, weil iOS-Widgets eine eigene
 WidgetKit-Erweiterung (eigenes Target) sind. Der Swift-Code liegt fertig in

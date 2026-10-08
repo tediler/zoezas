@@ -20,6 +20,7 @@ import '../bookings/booking_editor.dart';
 import '../bookings/booking_tile.dart';
 import '../bookings/planned_sheet.dart';
 import '../bookings/quick_add.dart';
+import '../onboarding/install_hint.dart';
 import '../settings/budget_row.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -52,6 +53,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 30),
                 _Hero(ledger: ledger, fina: fina),
                 const SizedBox(height: 26),
+                const SafariInstallHint(padding: EdgeInsets.only(bottom: 14)),
                 _Overview(ledger: ledger, summary: summary),
                 const SizedBox(height: 14),
                 _TipCard(tip: Fina.tip(fina), due: due),
@@ -520,6 +522,8 @@ class _TipCard extends ConsumerWidget {
             context.push('/budgets');
           case FinaTipAction.openGoals:
             context.go('/savings');
+          case FinaTipAction.backup:
+            context.push('/data');
           case null:
             break;
         }

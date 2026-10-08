@@ -15,6 +15,7 @@ import '../../data/providers.dart';
 import '../../domain/enums.dart';
 import '../../domain/fina.dart';
 import '../../domain/recurrence.dart';
+import 'install_hint.dart';
 
 /// Kennenlernen: Name, Tonfall, Schwerpunkt, Konten und Einkommen. Alles
 /// bleibt lokal – kein Konto, keine E-Mail.
@@ -305,6 +306,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ],
           ),
         ),
+        const SafariInstallHint(padding: EdgeInsets.only(top: 14)),
       ],
     );
   }

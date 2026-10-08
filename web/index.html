@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Wird beim Bauen durch --base-href ersetzt (z. B. /zoezas/ auf GitHub Pages). -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Zoëzas – deine persönliche Finanz-Begleiterin. Alles bleibt auf deinem Gerät.">
+  <meta name="theme-color" content="#F9EAF1">
+
+  <!-- iOS: als App vom Home-Bildschirm starten -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Zoëzas">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="manifest" href="manifest.json">
+  <title>Zoëzas</title>
+
+  <style>
+    /* Weiß unten, damit der Streifen unter der Navigationsleiste nahtlos ist. */
+    html, body { margin: 0; height: 100%; background: #FFFFFF; }
+    #splash {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      background: #F9EAF1;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #8E858B; transition: opacity .35s ease;
+    }
+    #splash img { width: 112px; height: 112px; border-radius: 28px; animation: breathe 2.4s ease-in-out infinite; }
+    #splash .name { font-family: Georgia, "Times New Roman", serif; font-size: 30px; color: #29242A; }
+    #splash .hint { font-size: 13px; letter-spacing: .4px; }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    @keyframes breathe { 50% { transform: scale(1.04); } }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <img src="icons/Icon-192.png" alt="">
+    <div class="name">Zoëzas</div>
+    <div class="hint">Fina macht sich hübsch …</div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var s = document.getElementById('splash');
+      if (!s) return;
+      s.classList.add('gone');
+      setTimeout(function () { s.remove(); }, 400);
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -65,7 +65,13 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  static QueryExecutor _openConnection() => driftDatabase(name: 'zoezas');
+  /// Android/iOS: SQLite-Datei im App-Ordner. Browser (PWA): SQLite als
+  /// WebAssembly in einem Web Worker, gespeichert in OPFS bzw. IndexedDB –
+  /// beide Dateien liegen in `web/` (siehe tool/web/drift_worker.dart).
+  static QueryExecutor _openConnection() => driftDatabase(
+    name: 'zoezas',
+    web: DriftWebOptions(sqlite3Wasm: Uri.parse('sqlite3.wasm'), driftWorker: Uri.parse('drift_worker.js')),
+  );
 }
 
 /// Kurzform für die Kategorien-Art in Abfragen.

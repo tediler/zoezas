@@ -970,14 +970,16 @@ class _Keypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).height < 700;
+    // Je kleiner der Bildschirm, desto flacher die Tasten – die Optionen darüber
+    // sollen sichtbar bleiben (iPhone als Web-App: ~750–850 px Höhe).
+    final h = MediaQuery.sizeOf(context).height;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: GridView.count(
         crossAxisCount: 3,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: compact ? 2.9 : 2.45,
+        childAspectRatio: h < 700 ? 3.2 : (h < 860 ? 2.9 : 2.45),
         padding: EdgeInsets.zero,
         children: [
           for (final k in _keys)

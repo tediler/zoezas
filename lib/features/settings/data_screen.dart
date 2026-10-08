@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/format/dates.dart';
@@ -15,6 +13,8 @@ import '../../core/theme/typography.dart';
 import '../../core/widgets/basics.dart';
 import '../../core/widgets/sheets.dart';
 import '../../data/backup.dart';
+import '../../data/providers.dart';
+import '../../platform/web_support.dart';
 
 /// Datenhoheit: exportieren, importieren, zurücksetzen.
 class DataScreen extends ConsumerStatefulWidget {
@@ -32,36 +32,42 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     return 'zoezas-sicherung-${Dates.dayKey(now)}.json';
   }
 
-  Future<File> _writeExport() async {
-    final json = await ref.read(backupServiceProvider).exportJson();
-    final dir = await getTemporaryDirectory();
-    final file = File(p.join(dir.path, _fileName));
-    await file.writeAsString(json, flush: true);
-    return file;
-  }
+  Future<Uint8List> _exportBytes() async => utf8.encode(await ref.read(backupServiceProvider).exportJson());
 
+  /// Merkt sich das Datum der letzten Sicherung (für Finas Erinnerung).
+  Future<void> _remember() =>
+      ref.read(settingsRepoProvider).set(SettingKeys.lastBackup, DateTime.now().toIso8601String());
+
+  /// Teilen-Menü: auf dem iPhone z. B. „In Dateien sichern“ oder an sich selbst
+  /// schicken. Im Browser ohne Teilen-Funktion wird stattdessen geladen.
   Future<void> _share() async {
     await _run(() async {
-      final file = await _writeExport();
-      await SharePlus.instance.share(
+      final bytes = await _exportBytes();
+      final result = await SharePlus.instance.share(
         ShareParams(
-          files: [XFile(file.path, mimeType: 'application/json')],
+          files: [XFile.fromData(bytes, mimeType: 'application/json', name: _fileName)],
+          fileNameOverrides: [_fileName],
           subject: 'Zoëzas-Sicherung',
           title: 'Zoëzas-Sicherung',
+          downloadFallbackEnabled: true,
         ),
       );
+      if (result.status != ShareResultStatus.dismissed) await _remember();
     });
   }
 
   Future<void> _saveToFile() async {
     await _run(() async {
-      final json = await ref.read(backupServiceProvider).exportJson();
       final path = await FilePicker.saveFile(
         dialogTitle: 'Sicherung speichern',
         fileName: _fileName,
-        bytes: utf8.encode(json),
+        bytes: await _exportBytes(),
       );
-      if (path != null && mounted) showToast(context, 'Gespeichert ✓');
+      // Im Browser startet ein Download und es kommt kein Pfad zurück.
+      if (path != null || kIsWeb) {
+        await _remember();
+        if (mounted) showToast(context, kIsWeb ? 'Download gestartet ✓' : 'Gespeichert ✓');
+      }
     });
   }
 
@@ -69,8 +75,11 @@ class _DataScreenState extends ConsumerState<DataScreen> {
     final result = await FilePicker.pickFiles(type: FileType.any, withData: true);
     if (result == null || result.files.isEmpty || !mounted) return;
     final f = result.files.single;
-    final bytes = f.bytes ?? (f.path != null ? await File(f.path!).readAsBytes() : null);
-    if (bytes == null) return;
+    final bytes = f.bytes;
+    if (bytes == null) {
+      if (mounted) showToast(context, 'Die Datei ließ sich nicht lesen.');
+      return;
+    }
     final json = utf8.decode(bytes, allowMalformed: true);
     final service = ref.read(backupServiceProvider);
     BackupSummary summary;
@@ -138,6 +147,24 @@ class _DataScreenState extends ConsumerState<DataScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final last = DateTime.tryParse(ref.watch(settingsProvider).value?[SettingKeys.lastBackup] ?? '');
+    // Im Browser am Rechner/Android ist der Download der natürliche Weg, auf dem
+    // iPhone das Teilen-Menü („In Dateien sichern“).
+    final downloadFirst = kIsWeb && !WebSupport.isAppleMobile;
+    Widget shareButton(bool primary) => primary
+        ? PrimaryButton(
+            label: WebSupport.isAppleMobile ? 'Teilen / In Dateien sichern' : 'Teilen …',
+            icon: Icons.ios_share_rounded,
+            onPressed: _busy ? null : _share,
+          )
+        : SoftButton(label: 'Teilen …', icon: Icons.ios_share_rounded, onPressed: _busy ? null : _share);
+    Widget saveButton(bool primary) => primary
+        ? PrimaryButton(label: 'Herunterladen', icon: Icons.download_rounded, onPressed: _busy ? null : _saveToFile)
+        : SoftButton(
+            label: kIsWeb ? 'Herunterladen' : 'Als Datei speichern',
+            icon: Icons.save_alt_rounded,
+            onPressed: _busy ? null : _saveToFile,
+          );
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 10, 16, 40),
@@ -163,7 +190,12 @@ class _DataScreenState extends ConsumerState<DataScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              'Zoëzas speichert alles nur auf diesem Gerät. Mit einer Sicherung nimmst du deine Daten mit – aufs neue Handy oder einfach zur Sicherheit.',
+              kIsWeb
+                  ? 'Zoëzas speichert alles nur in diesem Browser auf diesem Gerät – nichts liegt auf einem Server. '
+                        'Eine Sicherung schützt dich, falls der Browser-Speicher einmal gelöscht wird, und bringt deine '
+                        'Daten auch in die Android-App.'
+                  : 'Zoëzas speichert alles nur auf diesem Gerät. Mit einer Sicherung nimmst du deine Daten mit – aufs '
+                        'neue Handy, in die Web-App oder einfach zur Sicherheit.',
               style: ZText.secondary,
             ),
           ),
@@ -178,14 +210,15 @@ class _DataScreenState extends ConsumerState<DataScreen> {
                   'Eine lesbare JSON-Datei mit allem: Konten, Buchungen, Planungen, Zielen, Schulden und Profil.',
                   style: ZText.secondary,
                 ),
-                const SizedBox(height: 16),
-                PrimaryButton(label: 'Teilen …', icon: Icons.ios_share_rounded, onPressed: _busy ? null : _share),
-                const SizedBox(height: 10),
-                SoftButton(
-                  label: 'Als Datei speichern',
-                  icon: Icons.save_alt_rounded,
-                  onPressed: _busy ? null : _saveToFile,
+                const SizedBox(height: 8),
+                Text(
+                  last == null ? 'Noch keine Sicherung erstellt.' : 'Letzte Sicherung: ${Dates.relative(last)}',
+                  style: ZText.small.copyWith(color: last == null ? ZColors.accentDeep : ZColors.textSecondary),
                 ),
+                const SizedBox(height: 16),
+                downloadFirst ? saveButton(true) : shareButton(true),
+                const SizedBox(height: 10),
+                downloadFirst ? shareButton(false) : saveButton(false),
               ],
             ),
           ),

@@ -1,7 +1,7 @@
 # Zoëzas – Arbeitsnotizen für Claude
 
-Persönliche Finanz- und Budget-App (Flutter, primär iOS, entwickelt und getestet
-unter Windows/Android). Lifestyle statt Banking: rosé Pastell, große Serifen-
+Persönliche Finanz- und Budget-App (Flutter): native App für Android, Web-App
+(PWA) fürs iPhone (D-015 – keine native iOS-App, kein Apple-Konto). Lifestyle statt Banking: rosé Pastell, große Serifen-
 Beträge, Begleiterin „Fina“. Auftraggeber und Nutzer: Tobias. Kommunikation
 **auf Deutsch**, Fachbegriffe englisch. Er will Begründungen statt nur
 Ergebnisse und Widerspruch, wenn etwas nicht sinnvoll ist.
@@ -20,10 +20,16 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs   # nach Änderungen an Tabellen (drift)
 flutter analyze                                            # muss „No issues found!“ liefern
 flutter test                                               # Logik + Datenbank (SQLite im Speicher)
-dart format lib test                                       # Zeilenbreite 120 (analysis_options.yaml)
+dart format $(find lib test -name '*.dart' ! -name '*.g.dart')   # Breite 120, generierte Dateien nicht anfassen
 flutter build apk --debug
-python tool/make_icons.py                                  # App-Icons neu erzeugen
+python tool/make_icons.py                                  # App-, Web- und Favicon-Icons neu erzeugen
+bash tool/build_web.sh [/basis-pfad/]                      # Web-App nach build/web (PWA)
 ```
+
+Web-App lokal ansehen: Launch-Konfiguration `zoezas-web` in `.claude/launch.json`
+(Python-Server auf Port 8099 für `build/web`) per `preview_start`, Ansicht „mobile“.
+Nach drift-Updates `web/drift_worker.js` neu kompilieren (siehe `tool/web/drift_worker.dart`)
+und prüfen, ob `web/sqlite3.wasm` noch passt (D-016).
 
 Emulator – **AVD `Medium_Phone_API_35_3`** (Koch-App nutzt `_4`):
 
@@ -46,10 +52,10 @@ während offener Tastatur treffen sonst leicht Tasten.
 - Flutter 3.35.2 / Dart 3.9 global (`C:\dev\flutter`), bewusst **nicht** aktualisieren.
   Paketversionen in `pubspec.yaml` sind festgelegt (D-001).
 - Android: minSdk 24, applicationId `de.hilsenbeck.zoezas`.
-- iOS: Bundle `de.hilsenbeck.zoezas`, App Group `group.de.hilsenbeck.zoezas`,
-  URL-Schema `zoezas`. Widget-Target muss in Xcode angelegt werden (docs/IOS_WIDGET.md).
+- iPhone: Web-App (docs/WEB.md), gehostet über GitHub Pages (`.github/workflows/web.yml`).
+  Der native iOS-Teil (`ios/`, `docs/IOS_WIDGET.md`) ist zurückgestellt.
 - Zeilenenden LF (`.gitattributes`). Python unter Windows: `open(p, 'w', newline='\n')`.
-- **Noch kein Git-Repository** – Commits nur nach Rückfrage.
+- Git-Repository auf `main` (seit 08.10.2026), noch ohne Remote. Committen nur nach Rückfrage.
 
 ## Konventionen
 
@@ -60,6 +66,10 @@ während offener Tastatur treffen sonst leicht Tasten.
 - UI-Dateien importieren drift nur als `import 'package:drift/drift.dart' show Value;`.
 - Farben/Typo nur über `ZColors`/`ZText`; Karten über `ZCard`, Beträge über `MoneyText`.
 - Sheets mit `showZSheet` bzw. `useRootNavigator: true` (über der Navigationsleiste).
+- **Alles muss auch im Browser laufen:** kein `dart:io` (`Platform`, `File`) in App-Code –
+  `kIsWeb`/`defaultTargetPlatform` nutzen, Browser-APIs nur über `lib/platform/web_support.dart`.
+  Nach größeren Änderungen auch `flutter build web` prüfen.
+- `package:flutter/foundation.dart` nur mit `show …` importieren (sonst Namenskonflikt mit `Category`).
 - Enum-Namen stehen in der Datenbank und im Export – **nie umbenennen**.
 - Neue reine Logik bekommt Tests in `test/domain/`, Datenbankverhalten in `test/data/`.
 
@@ -83,3 +93,4 @@ Beschreibungen in `Fina._descriptions` unter demselben `key`.
 - `Ledger` rechnet im Speicher über alle Buchungen (bewusst, D-003).
 - Eczar hat eine große Unterlänge – Abstände unter großen Beträgen sind darauf abgestimmt.
 - Nur Euro, nur Deutsch, nur helles Design.
+- Web: Emojis kommen beim ersten Gebrauch als Schrift von `fonts.gstatic.com` (offene Frage, ob mitliefern).

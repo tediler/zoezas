@@ -26,7 +26,7 @@ class FinaTip {
   final FinaTipAction? action;
 }
 
-enum FinaTipAction { quickAdd, showDue, openBudgets, openGoals }
+enum FinaTipAction { quickAdd, showDue, openBudgets, openGoals, backup }
 
 /// Was Fina über die aktuelle Lage weiß.
 class FinaContext {
@@ -45,6 +45,9 @@ class FinaContext {
     required this.goals,
     required this.frequentSmallExpense,
     required this.categoryNames,
+    this.bookingCount = 0,
+    this.daysSinceBackup,
+    this.inBrowser = false,
   });
 
   final DateTime now;
@@ -63,6 +66,23 @@ class FinaContext {
   /// Häufigste kleine Ausgabe der letzten Wochen (Titel, typischer Betrag).
   final (String, int)? frequentSmallExpense;
   final Map<int, String> categoryNames;
+
+  /// Anzahl gebuchter Buchungen insgesamt.
+  final int bookingCount;
+
+  /// Tage seit der letzten Sicherung (null = noch nie gesichert).
+  final int? daysSinceBackup;
+
+  /// Läuft als Web-App? Dort liegen die Daten nur im Browser-Speicher.
+  final bool inBrowser;
+
+  /// Zeit für eine Sicherung? Im Browser früher, weil der Speicher dort
+  /// verloren gehen kann (z. B. wenn die App vom Home-Bildschirm gelöscht wird).
+  bool get needsBackup {
+    final d = daysSinceBackup;
+    if (d == null) return bookingCount >= 10;
+    return d >= (inBrowser ? 14 : 30);
+  }
 }
 
 /// Finas Stimme. Alles lokal und regelbasiert: Die Lage bestimmt die Situation,
@@ -358,6 +378,19 @@ abstract final class Fina {
           FinaTone.calm => '${c.dueCount} $s auf Bestätigung.',
         },
         action: FinaTipAction.showDue,
+      );
+    }
+
+    if (c.needsBackup) {
+      final since = c.daysSinceBackup == null ? 'noch nie' : 'seit ${c.daysSinceBackup} Tagen nicht';
+      return FinaTip(
+        emoji: '💾',
+        text: switch (t) {
+          FinaTone.cheeky => 'Du hast deine Daten $since gesichert. Ein Tipp, und ich schlafe ruhiger 😌',
+          FinaTone.warm => 'Magst du kurz eine Sicherung machen? Du hast $since gesichert – sicher ist sicher 🌷',
+          FinaTone.calm => 'Letzte Sicherung: $since. Jetzt sichern.',
+        },
+        action: FinaTipAction.backup,
       );
     }
 

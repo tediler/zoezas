@@ -81,6 +81,8 @@ dem Netz geladen werden – siehe offene Fragen.
 
 ## D-012 Homescreen-Widget nativ, Daten über home_widget
 
+*Für iOS überholt durch D-015 – das Android-Widget bleibt.*
+
 Android: `AppWidgetProvider` mit `RemoteViews` (Kotlin). iOS: WidgetKit (Swift).
 `home_widget` übernimmt nur die Datenübergabe und das Öffnen per Link. Dazu
 App-Shortcuts über `quick_actions` (Icon lange drücken), auf beiden Plattformen.
@@ -96,3 +98,44 @@ jeder Tag, an dem die App geöffnet wurde.
 neu (frühestens nach dem letzten erledigten). Bereits Gebuchtes bleibt
 unverändert. „Immer am Monatsende“ speichert den Tag 31, damit ein Gehalt am 31.
 nach einem kurzen Monat nicht dauerhaft auf den 30. rutscht.
+
+## D-015 iPhone als Web-App (PWA) statt nativer iOS-App
+
+**Von Tobias entschieden (08.10.2026).** Eine eigene iOS-App bräuchte ein
+kostenpflichtiges Apple-Entwicklerkonto (bzw. kostenlos nur mit Neuinstallation
+alle 7 Tage) und einen Mac. Stattdessen läuft dieselbe Flutter-Codebasis als PWA
+im Browser und wird auf dem iPhone über Safari zum Home-Bildschirm hinzugefügt.
+Android bleibt native App mit Widget. Verzicht: Homescreen-Widget auf dem iPhone,
+App-Shortcuts auf iOS. Der vorbereitete Swift-Code (`ios/ZoezasWidget/`) bleibt
+liegen, falls sich das später ändert.
+
+## D-016 Datenbank im Browser: drift mit SQLite-WebAssembly
+
+Dieselbe Datenbank und dieselben Repositories wie auf Android, keine zweite
+Datenhaltung. drift öffnet im Browser SQLite als WebAssembly in einem Web Worker
+und speichert in IndexedDB (bzw. OPFS, wo verfügbar). `web/drift_worker.js` wird
+lokal aus `tool/web/drift_worker.dart` kompiliert; `web/sqlite3.wasm` stammt aus
+dem lokalen Pub-Cache (drift-DevTools-Build), es wurde nichts heruntergeladen.
+Geprüft: Die Datei liefert alle Funktionen, die drift braucht; fehlende neuere
+(z. B. Sessions) behandelt das `sqlite3`-Paket als optional. Verworfen: eigene
+JSON-Speicherung nur fürs Web – doppelte Logik, doppelte Fehlerquellen.
+
+## D-017 Hosting über GitHub Pages, gebaut per GitHub Actions
+
+Kostenlos, HTTPS (Pflicht für PWAs), baut und testet bei jedem Push selbst
+(`.github/workflows/web.yml`). Nachteil: Bei kostenlosen Konten muss das
+Repository öffentlich sein (nur Code, keine Daten). Alternative ohne öffentliches
+Repository: Netlify Drop oder Cloudflare Pages per Drag & Drop (`tool/build_web.sh`).
+Anleitung: [WEB.md](WEB.md).
+
+## D-018 Web-Besonderheiten
+
+- `--no-web-resources-cdn`: CanvasKit kommt vom eigenen Server (offline, keine
+  Google-CDN-Abhängigkeit für die Engine).
+- Plattformcode ohne `dart:io`: `defaultTargetPlatform`/`kIsWeb` statt `Platform`,
+  Browser-Funktionen über bedingten Import (`lib/platform/web_support*.dart`).
+- Export/Import nur über Bytes (`XFile.fromData`, `withData: true`), damit
+  derselbe Code auf Android und im Browser läuft.
+- Die App bittet um dauerhaften Speicher (`navigator.storage.persist()`), Fina
+  erinnert im Browser nach 14 Tagen ohne Sicherung, und Safari-Nutzer werden
+  gewarnt, dass Safari-Tab und Home-Bildschirm-App getrennt speichern.
